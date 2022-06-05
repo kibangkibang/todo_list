@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:to_do_list/providers/todo_default.dart';
 import 'package:to_do_list/providers/todo_sqlite.dart';
 
 import '../models/todo.dart';
