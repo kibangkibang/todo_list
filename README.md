@@ -1,3 +1,10 @@
+# 6월 5일
+- 앱 로그인 관리 추가
+- To-do 리스트 화면 구성
+- 더미데이터로 UI 작동확인
+- Provider로 데이터 관리 기능 추가
+
+
 # to_do_list
 
 A new Flutter project.
