@@ -49,7 +49,7 @@ app.*.map.json
 #Firebase Keyfiles
 GoogleService-Info.plist
 google-services.json
-firebase_options.dart
+lib/firebase_options.dart
 
 #News API
-news_api.dart
+lib/providers/news_api.dart
