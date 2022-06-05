@@ -49,3 +49,4 @@ app.*.map.json
 #Firebase Keyfiles
 GoogleService-Info.plist
 google-services.json
+firebase_options.dart

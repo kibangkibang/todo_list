@@ -1,7 +1,6 @@
-import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:to_do_list/providers/todo_sqlite.dart';
-
+import 'package:to_do_list/providers/todo_firestore.dart';
 import '../models/todo.dart';
 
 class ListScreen extends StatefulWidget {
@@ -11,30 +10,30 @@ class ListScreen extends StatefulWidget {
 
 class _ListScreenState extends State<ListScreen> {
   late List<Todo> todos;
-  TodoSqlite todoSqlite = TodoSqlite();
-  bool isLoading = true;
+  TodoFirebase todoFirebase = TodoFirebase();
 
-  Future initDb() async{
-    await todoSqlite.initDb().then((value) async{
-      todos = await todoSqlite.getTodos();
-    },);
-  }
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    Timer(Duration(seconds: 2), (){
-      initDb().then((value) {
-        setState(() {
-          isLoading = false;
-      });
-      },);
+    setState(() {
+      todoFirebase.initDb();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return StreamBuilder<QuerySnapshot>(
+        stream: todoFirebase.todoStream,
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if(!snapshot.hasData){
+            return Scaffold(
+              appBar: AppBar(),
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }else{
+            todos = todoFirebase.getTodos(snapshot);
+            return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
           title: Text('할 일 목록 앱'),
@@ -81,14 +80,11 @@ class _ListScreenState extends State<ListScreen> {
                     ),
                     actions: [
                       TextButton(
-                          onPressed: () async{
-                            todoSqlite.addTodo(
-                                  Todo(title: title, description: description));
-                            List<Todo> newTodos= await todoSqlite.getTodos();
-                            setState(() {
-                              todos = newTodos;
-                            });
-                            Navigator.of(context).pop();
+                          onPressed: () {
+                            todoFirebase.todosReference.add(
+                                  Todo(title: title, description: description).toMap()).then((value) {
+                                    Navigator.of(context).pop();
+                                  },);
                           },
                           child: Text('추가')),
                       TextButton(
@@ -107,11 +103,7 @@ class _ListScreenState extends State<ListScreen> {
             ),
           ),
         ),
-        body: isLoading
-            ? Center(
-                child: CircularProgressIndicator(),
-              )
-            : ListView.separated(
+        body: ListView.separated(
                 itemBuilder: (context, index) {
                   return ListTile(
                     title: Text(todos[index].title),
@@ -177,17 +169,11 @@ class _ListScreenState extends State<ListScreen> {
                                         ),
                                         actions: [
                                           TextButton(
-                                              onPressed: () async{
-                                                await todoSqlite.updateTodo(Todo(
-                                                    id: todos[index].id,
-                                                    title: title,
-                                                    description: description,
-                                                  ));
-                                                List<Todo> newTodos = await todoSqlite.getTodos();
-                                                setState(() {
-                                                  todos = newTodos;
+                                              onPressed: () {
+                                                Todo newTodo = Todo(title: title, description: description,reference:todos[index].reference);
+                                                todoFirebase.updateTodo(newTodo).then((value){
+                                                  Navigator.of(context).pop();
                                                 });
-                                                Navigator.of(context).pop();
                                               },
                                               child: Text('수정')),
                                           TextButton(
@@ -211,12 +197,9 @@ class _ListScreenState extends State<ListScreen> {
                                     content: Container(child: Text('삭제하시겠습니까?')),
                                     actions: [
                                       TextButton(onPressed: () async{
-                                        await todoSqlite.deleteTodo(todos[index].id ?? 0);
-                                        List<Todo> newTodos = await todoSqlite.getTodos();
-                                        setState(() {
-                                          todos = newTodos;
+                                        todoFirebase.deleteTodo(todos[index]).then((value){
+                                          Navigator.of(context).pop();
                                         });
-                                        Navigator.of(context).pop();
                                       }, child: Text('삭제')),
                                       TextButton(onPressed: (){
                                         Navigator.of(context).pop();
@@ -237,5 +220,7 @@ class _ListScreenState extends State<ListScreen> {
                   return Divider();
                 },
                 itemCount: todos.length));
+          }
+        });
   }
 }
